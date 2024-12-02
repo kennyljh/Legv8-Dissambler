@@ -1,9 +1,7 @@
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -13,7 +11,7 @@ import java.util.Map;
 
 public class Disassembler {
 
-    private Map<Integer, String> bytesToInstructions = new LinkedHashMap<>();
+    private Map<Integer, String> lineCodeToInstructions = new LinkedHashMap<>();
     byte[] bytes = null;
 
 
@@ -64,7 +62,8 @@ public class Disassembler {
 
             switch (instructionType){
 
-
+                case "R":
+                    lineCodeToInstructions.put(i, decodeRTypeInstruction(instructionBitOf32));
             }
         }
 
@@ -137,49 +136,27 @@ public class Disassembler {
         int Rd = instructionOf32 & 0x1f;
 
         String RdRnRm = binaryToRegister(Rd) + ", " + binaryToRegister(Rn) + ", " + binaryToRegister(Rm);
+        String RdRnShamt = binaryToRegister(Rd) + ", " + binaryToRegister(Rn) + ", " + binaryToImmediate(shamt);
 
-        String instruction;
-        String completeInstruction;
+        // returning complete instruction
+        return switch (opcode) {
 
-        switch (opcode){
-
-            case 0b10001011000:
-                instruction = "ADD";
-                completeInstruction = (instruction + " " + RdRnRm);
-
-            case 0b10001010000:
-                instruction = "AND";
-                completeInstruction = (instruction + " " + RdRnRm);
-
-            case 0b11010110000:
-                instruction = "BR";
-                completeInstruction = (instruction + " X" + binaryToDecimal())
-            case 0b11001010000:
-                instruction = "EOR";
-            case 0b11010011011:
-                instruction = "LSL";
-            case 0b11010011010:
-                instruction = "LSR";
-            case 0b10101010000:
-                instruction = "ORR";
-            case 0b11001011000:
-                instruction = "SUB";
-            case 0b11101011000:
-                instruction = "SUBS";
-            case 0b10011011000:
-                instruction = "MUL";
-            case 0b11111111101:
-                instruction = "PRNT";
-            case 0b11111111100:
-                instruction = "PRNL";
-            case 0b11111111110:
-                instruction = "DUMP";
-            case 0b11111111111:
-                instruction = "HALT";
-            default:
-                completeInstruction = "INVALID";
-        }
-        return completeInstruction;
+            case 0b10001011000 -> "ADD " + RdRnRm;
+            case 0b10001010000 -> "AND " + RdRnRm;
+            case 0b11010110000 -> "BR " + binaryToRegister(Rn);
+            case 0b11001010000 -> "EOR " + RdRnRm;
+            case 0b11010011011 -> "LSL " + RdRnShamt;
+            case 0b11010011010 -> "LSR " + RdRnShamt;
+            case 0b10101010000 -> "ORR " + RdRnRm;
+            case 0b11001011000 -> "SUB " + RdRnRm;
+            case 0b11101011000 -> "SUBS " + RdRnRm;
+            case 0b10011011000 -> "MUL " + RdRnRm;
+            case 0b11111111101 -> "PRNT";
+            case 0b11111111100 -> "PRNL";
+            case 0b11111111110 -> "DUMP";
+            case 0b11111111111 -> "HALT";
+            default -> "INVALID OPCODE" + opcode;
+        };
     }
 
     private String decodeITypeInstruction(){}
@@ -210,12 +187,35 @@ public class Disassembler {
         }
 
         return switch (decimal) {
+            case 16 -> "IP0";
+            case 17 -> "IP1";
             case 28 -> "SP";
             case 29 -> "FP";
             case 30 -> "LR";
             case 31 -> "XZR";
             default -> "X" + decimal;
         };
+    }
+
+    /**
+     * Converts binary to immediate
+     * @param binary
+     * @return
+     */
+    private String binaryToImmediate (int binary){
+
+        int decimal = 0;
+        int position = 0;
+
+        while (binary > 0){
+
+            int bit = binary & 0x1;
+            decimal += bit * Math.pow(2, position);
+
+            binary = binary >> 1;
+            position++;
+        }
+        return "#" + decimal;
     }
 
 
