@@ -1,3 +1,7 @@
+/**
+ * @author kennyljh
+ */
+
 public class LineCodeData {
 
     private String instruction;

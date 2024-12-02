@@ -1,13 +1,13 @@
+/**
+ * @author kennyljh
+ */
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.TreeMap;
-
-/**
- * @author kennyljh
- */
 
 public class Disassembler {
 
@@ -19,7 +19,6 @@ public class Disassembler {
 
     private int currentLine = 0;
     private int labelCount = 0;
-
 
     public static void main (String[] arg){
 
@@ -33,12 +32,12 @@ public class Disassembler {
         Disassembler disassembler = new Disassembler();
         disassembler.fileToBytes(filePath);
         disassembler.bytesToInstructions();
+        disassembler.printInstructions();
     }
 
-
     /**
-     * Takes 4 bytes at a time
-     * @param filePath
+     * Reads all bytes from a given file
+     * @param filePath path of file
      */
     private void fileToBytes(String filePath){
 
@@ -50,10 +49,13 @@ public class Disassembler {
         }
     }
 
+    /**
+     * Converts all bytes to instructions
+     */
     private void bytesToInstructions(){
 
         if (bytes == null){
-            System.out.println("No bytes?");
+            System.out.println("No bytes to read?");
             return;
         }
 
@@ -61,38 +63,59 @@ public class Disassembler {
 
             currentLine = i;
 
-            int instructionBitOf32 = ((bytes[i] << 24) |
-                                        (bytes[i + 1] << 16) |
-                                        (bytes[i + 2 << 8]) |
-                                        (bytes[i + 3]));
+            int instructionBitOf32 = ((bytes[i] & 0xff) << 24) |
+                                        ((bytes[i + 1] & 0xff) << 16) |
+                                        ((bytes[i + 2] & 0xff) << 8) |
+                                        (bytes[i + 3] & 0xff);
 
-            decodeInstruction(instructionBitOf32);
+            String decodedInstruction = decodeInstruction(instructionBitOf32);
+
+            if (lineCodeToInstructions.containsKey(currentLine)){
+
+                LineCodeData existingData = lineCodeToInstructions.get(currentLine);
+                existingData.setInstruction(decodedInstruction);
+                lineCodeToInstructions.put(currentLine, existingData);
+            }
+            else {
+
+                LineCodeData newData = new LineCodeData(decodedInstruction, null);
+                lineCodeToInstructions.put(currentLine, newData);
+            }
         }
-
-
     }
 
-    private void decodeInstruction(int instructionOf32){
+    /**
+     * Decode specific 32-bit instruction
+     * @param instructionOf32 32-bit instruction
+     * @return decoded instruction
+     */
+    private String decodeInstruction(int instructionOf32){
 
-        if (decodeRTypeInstruction(instructionOf32) != null) {
-            return;
+        String decodeInstruction = decodeRTypeInstruction(instructionOf32);
+        if (decodeInstruction != null) {
+            return decodeInstruction;
         }
 
-        if (decodeITypeInstruction(instructionOf32) != null) {
-            return;
+        decodeInstruction = decodeITypeInstruction(instructionOf32);
+        if (decodeInstruction != null) {
+            return decodeInstruction;
         }
 
-        if (decodeDTypeInstruction(instructionOf32) != null) {
-            return;
+        decodeInstruction = decodeDTypeInstruction(instructionOf32);
+        if (decodeInstruction != null) {
+            return decodeInstruction;
         }
 
-        if (decodeBTypeInstruction(instructionOf32) != null) {
-            return;
+        decodeInstruction = decodeBTypeInstruction(instructionOf32);
+        if (decodeInstruction != null) {
+            return decodeInstruction;
         }
 
-        if (decodeCBTypeInstruction(instructionOf32) != null) {
-            return;
+        decodeInstruction = decodeCBTypeInstruction(instructionOf32);
+        if (decodeInstruction != null) {
+            return decodeInstruction;
         }
+        return "INVALID INSTRUCTION";
     }
 
     /**
@@ -113,8 +136,8 @@ public class Disassembler {
      *     DUMP
      *     HALT
      *
-     * @param instructionOf32
-     * @return
+     * @param instructionOf32 32-bit instruction
+     * @return decoded R-type instruction
      */
     private String decodeRTypeInstruction(int instructionOf32){
 
@@ -157,8 +180,8 @@ public class Disassembler {
      *     SUBI
      *     SUBIS
      *
-     * @param instructionOf32
-     * @return
+     * @param instructionOf32 32-bit instruction
+     * @return decoded I-type instruction
      */
     private String decodeITypeInstruction(int instructionOf32){
 
@@ -187,8 +210,8 @@ public class Disassembler {
      *     LDUR
      *     STUR
      *
-     * @param instructionOf32
-     * @return
+     * @param instructionOf32 32-bit instruction
+     * @return decoded D-type instruction
      */
     private String decodeDTypeInstruction(int instructionOf32){
 
@@ -214,8 +237,8 @@ public class Disassembler {
      *     B
      *     BL
      *
-     * @param instructionOf32
-     * @return
+     * @param instructionOf32 32-bit instruction
+     * @return decoded B-type instruction
      */
     private String decodeBTypeInstruction(int instructionOf32){
 
@@ -253,8 +276,8 @@ public class Disassembler {
      *     CBNZ
      *     CBZ
      *
-     * @param instructionOf32
-     * @return
+     * @param instructionOf32 32-bit instruction
+     * @return CB-type instruction
      */
     private String decodeCBTypeInstruction(int instructionOf32){
 
@@ -280,8 +303,9 @@ public class Disassembler {
     }
 
     /**
-     * @param instructionJump
-     * @return
+     * Determines the appropriate branch label for current instruction
+     * @param instructionJump instruction jump distance
+     * @return branch label
      */
     private String branchLabelDeterminant(int instructionJump){
 
@@ -321,8 +345,8 @@ public class Disassembler {
 
     /**
      * Converts binary to register
-     * @param binary
-     * @return
+     * @param binary given binary
+     * @return register
      */
     private String binaryToRegister (int binary){
 
@@ -351,8 +375,8 @@ public class Disassembler {
 
     /**
      * Converts binary to immediate
-     * @param binary
-     * @return
+     * @param binary given binary
+     * @return immediate
      */
     private String binaryToImmediate (int binary){
 
@@ -372,9 +396,9 @@ public class Disassembler {
 
     /**
      * Convert binary to decimal (Two's complement)
-     * @param binary
-     * @param binarySize
-     * @return
+     * @param binary given binary
+     * @param binarySize given binary size
+     * @return decimal
      */
     private int binaryToDecimal (int binary, int binarySize){
 
@@ -409,5 +433,24 @@ public class Disassembler {
             return decimal;
         }
     }
-}
 
+    /**
+     * Outputs all instructions into console
+     */
+    private void printInstructions(){
+
+        for (Integer line : lineCodeToInstructions.keySet()){
+
+            LineCodeData data = lineCodeToInstructions.get(line);
+
+            if (data.getBranchLabel() != null){
+                System.out.println();
+                System.out.println(data.getBranchLabel());
+                System.out.println(data.getInstruction());
+            }
+            else {
+                System.out.println(data.getInstruction());
+            }
+        }
+    }
+}
