@@ -1,3 +1,3 @@
 #!/bin/sh
-cd coms321_PA2/src/
+cd output/
 java Disassembler "$1"
