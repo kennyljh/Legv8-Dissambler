@@ -22,12 +22,6 @@ public class Disassembler {
 
     public static void main (String[] arg){
 
-        if (arg.length != 1){
-
-            System.out.println("Usage instruction: java Disassembler <binary file>");
-            return;
-        }
-
         String filePath = arg[0];
         Disassembler disassembler = new Disassembler();
         disassembler.fileToBytes(filePath);

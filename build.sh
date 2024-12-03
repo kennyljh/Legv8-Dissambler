@@ -1,2 +1,3 @@
 #!/bin/sh
-javac Disassembler.java
+cd coms321_PA2/src/
+javac Disassembler.java LineCodeData.java
