@@ -1,0 +1,47 @@
+allInstructions:
+	ADD X1, X2, X3
+	ADDI X4, X5, #123
+	AND X11, X12, X13
+	ANDI X14, X15, #456
+	B moreInstructions
+	B.EQ moreInstructions
+	B.NE moreInstructions
+	B.HS moreInstructions
+	B.LO moreInstructions
+	B.MI moreInstructions
+	B.PL moreInstructions
+	B.VS moreInstructions
+	B.VC moreInstructions
+	B.HI moreInstructions
+	B.LS moreInstructions
+	B.GE moreInstructions
+	B.LT moreInstructions
+	B.GT moreInstructions
+	B.LE moreInstructions
+	BL moreInstructions
+	BR LR
+	CBNZ X11, moreInstructions
+	CBZ X0, moreInstructions
+	EOR X1, X2, X3
+	EORI X4, X5, #789
+	LDUR X1, [X2, #-256]
+	LSL X6, X7, #12
+	LSR X8, X9, #24
+	ORR X1, X2, X3
+	ORRI IP0, IP1, #6
+	STUR X3, [SP, #40]
+	SUB X9, X10, X11
+	SUBI X12, X13, #24
+	SUBIS FP, X2, #24
+	SUBS X2, X3, X4
+	MUL X5, X6, X7
+	PRNT
+	PRNL
+	DUMP
+	HALT
+	
+moreInstructions:
+	PRNT
+	HALT
+	LSL X6, X8, #12
+	

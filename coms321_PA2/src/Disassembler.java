@@ -215,7 +215,7 @@ public class Disassembler {
         int Rn = (instructionOf32 >> 5) & 0x1f;
         int Rt = instructionOf32 & 0x1f;
 
-        String RtRnDt = binaryToRegister(Rt) + ", [" + binaryToRegister(Rn) + ", " + binaryToImmediate(DT_address) + "]";
+        String RtRnDt = binaryToRegister(Rt) + ", [" + binaryToRegister(Rn) + ", #" + binaryToDecimal(DT_address, 9) + "]";
 
         // returning complete instruction
         return switch (opcode) {
