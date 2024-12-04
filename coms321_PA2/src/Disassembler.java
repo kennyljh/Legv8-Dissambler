@@ -23,10 +23,7 @@ public class Disassembler {
 
     public static void main (String[] arg){
 
-//        String filePath = arg[0];
-        Scanner scan = new Scanner(System.in);
-        System.out.println("Enter filepath:");
-        String filePath = scan.nextLine();
+        String filePath = arg[0];
         Disassembler disassembler = new Disassembler();
         disassembler.fileToBytes(filePath);
         disassembler.bytesToInstructions();
@@ -43,6 +40,7 @@ public class Disassembler {
             Path path = Paths.get(filePath);
             bytes = Files.readAllBytes(path);
         } catch (IOException e) {
+            System.out.println("Usage: ./run.sh <.legv8asm.machine filename>");
             throw new RuntimeException(e);
         }
     }
