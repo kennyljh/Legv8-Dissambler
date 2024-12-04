@@ -1,0 +1,297 @@
+// Name: Kenny Jia Hui Leong; NetID: kennyljh
+
+main:
+	
+	ORRI X0, X0, #0x100  // array a base address
+	ORRI X1, X1, #12  // size of array
+    
+	BL fill // branch link to fill
+	
+	//HALT
+	
+	BL quicksort // branch to quicksort
+	HALT
+
+//----------------------------------------------------------------------//
+fill:
+	// Expecting:
+	// X0: base address of array
+	// X1: size of array
+	
+	ADD X9, XZR, XZR  // X9, i = 0
+	
+fill_loop:
+
+	SUBS X10, X9, X1  // X10 = i - n
+	B.GE fill_end  // if i >= n, end loop
+	
+	SUB X10, X1, X9  // X10 = n - i
+	SUBI X10, X10, #1  // X10 -= 1
+	
+	LSL X11, X9, #3  // X11 = i * 8
+	ADD X11, X11, X0  // X11 = a[i] address
+	STUR X10, [X11, #0]  // a[i] = n - i - 1
+	
+	ADDI X9, X9, #1  // i++
+	
+	B fill_loop  // branch to fill_loop
+	
+fill_end:
+	BR LR
+	
+	
+//----------------------------------------------------------------------//    
+next_i:
+	// Expecting:
+	// X0: array a base address
+    // X1: current index i
+    // X2: last index l
+    // X3: partition value p 
+    
+	SUBS X9, X1, X2  // i - l
+	B.GT next_i_end // if i > l, exit loop
+    
+    LSL X9, X1, #3  // X9 = i * 8
+    ADD X9, X9, X0  // X9 = a[i] address
+    LDUR X10, [X9, #0]  // X10 = a[i]
+    
+    SUBS X9, X10, X3  // a[i] - p
+    B.GE next_i_end  // if a[i] >= p, exit loop
+    
+    ADDI X1, X1, #1  // i++
+    B next_i  // loop again
+    
+next_i_end:
+	ORRI X0, X1, #0
+	BR LR
+	
+	
+//----------------------------------------------------------------------//  
+next_j:
+	// Expecting:
+	// X0: array a base address
+    // X1: current index j
+    // X2: first index f
+    // X3: partition value p
+
+	SUBS X9, X1, X2  // j - f
+	B.LE next_j_end // if j <= f, exit loop
+
+    LSL X9, X1, #3  // X9 = j * 8
+    ADD X9, X9, X0  // X9 = a[j] address
+    LDUR X10, [X9, #0]  // X10 = a[j]
+    
+    SUBS X9, X10, X3  // a[j] - p
+    B.LT next_j_end  // if a[j] < p, exit loop
+    
+    SUBI X1, X1, #1  // j--
+    B next_j  // loop again
+    
+next_j_end:
+	ORRI X0, X1, #0
+	BR LR
+    
+
+//----------------------------------------------------------------------//
+swap:
+	// Expecting:
+	// X0: array a base address
+	// X1: index i
+	// X2: index j
+	
+	// calculate address & load a[i] to temp
+	LSL X9, X1, #3  // X9 = i * 8
+	ADD X9, X9, X0  // X9 = a[i] address
+	LDUR X10, [X9, #0]  // X10 = temp = a[i]
+
+	// calculate address & load a[j]
+	LSL X11, X2, #3  // X11 = j * 8
+	ADD X11, X11, X0  // X11 = a[j] address
+	LDUR X12, [X11, #0]  // X12 = a[j]
+	
+	// swapping
+	STUR X12, [X9, #0]  // a[i] = a[j]
+	STUR X10, [X11, #0]  // a[j] = temp
+	
+	BR LR
+	
+//----------------------------------------------------------------------//
+partition:
+	// Expecting:
+	// X0: array a base address
+	// X1: first index f
+	// X2: last index l
+	
+	// initialize i, j, and p
+	LSL X9, X1, #3  // X9 = f * 8
+	ADD X9, X9, X0  // X9 = a[f] address
+	LDUR X9, [X9, #0]  // X9 = p = a[f]
+	
+	ADDI X10, X1, #1  // i = f + 1
+	ADD X11, X2, XZR  // j = l
+	
+	// to preserve *a, f and l
+	ORRI X5, X0, #0  // *a
+	ORRI X6, X1, #0  // f
+	ORRI X7, X2, #0  // l
+	
+partition_loop:
+	SUBS X12, X10, X11  // i - j
+	B.GT partition_end  // if i > j, exit loop
+	
+	// need: X0: *a, X1: i, X2: l, X3: p
+	ORRI X0, X5, #0  // X0 = *a
+	ORRI X1, X10, #0  // X1 = i
+	ORRI X2, X7, #0  // X2 = l
+	ORRI X3, X9, #0  // X3 = p
+
+	SUBI SP, SP, #56
+	STUR X5, [SP, #48]
+	STUR X6, [SP, #40]
+	STUR X7, [SP, #32]
+	STUR LR, [SP, #24]
+	STUR X9, [SP, #16]
+	STUR X11, [SP, #8]
+	BL next_i  // returns result in X0
+	ORRI X10, X0, #0  // X10 = new i
+	STUR X10, [SP, #0]
+	
+	// need: X0: a*, X1: j, X2: f, X3: p
+	LDUR X5, [SP, #48]
+	ORRI X0, X5, #0  // X0 = *a
+	LDUR X11, [SP, #8]
+	ORRI X1, X11, #0  // X1 = j
+	LDUR X6, [SP, #40]
+	ORRI X2, X6, #0  // X2 = f
+	LDUR X9, [SP, #16]
+	ORRI X3, X9, #0  // X3 = p
+
+	BL next_j  // returns result in X0
+	ORRI X11, X0, #0  // X11 = new j
+	LDUR X10, [SP, #0]
+	LDUR X9, [SP, #16]
+	LDUR LR, [SP, #24]
+	LDUR X7, [SP, #32]
+	LDUR X6, [SP, #40]
+	LDUR X5, [SP, #48]
+	ADDI SP, SP, #56
+
+	//
+	//	if (i < j) {
+    // 		swap(a, i, j);
+    //	}
+	//
+	SUBS X12, X10, X11  // i - j
+	B.GE partition_loop  // if i >= j, no if statement
+	
+	ORRI X0, X5, #0  // X0 = base array address
+	ORRI X1, X10, #0  // X1 = i
+	ORRI X2, X11, #0  // X2 = j
+
+	SUBI SP, SP, #56
+	STUR X9, [SP, #48]
+	STUR X5, [SP, #40]
+	STUR X6, [SP, #32]
+	STUR X7, [SP, #24]
+	STUR LR, [SP, #16]
+	STUR X10, [SP, #8]
+	STUR X11, [SP, #0]
+	BL swap
+	LDUR X11, [SP, #0]
+	LDUR X10, [SP, #8]
+	LDUR LR, [SP, #16]
+	LDUR X7, [SP, #24]
+	LDUR X6, [SP, #32]
+	LDUR X5, [SP, #40]
+	LDUR X9, [SP, #48]
+	ADDI SP, SP, #56
+
+	B partition_loop  // loop back after if statement
+	
+partition_end:
+	SUB X12, X11, X6  // j - f
+	CBZ X12, partition_return_j  // go to partition_return_j if j == f
+	
+	ORRI X0, X5, #0  // X0 = base array address
+	ORRI X1, X11, #0  // X1 = j
+	ORRI X2, X6, #0  // X2 = f
+	
+	SUBI SP, SP, #16
+	STUR X11, [SP, #8]
+	STUR LR, [SP, #0]
+	BL swap
+	LDUR LR, [SP, #0]
+	LDUR X11, [SP, #8]
+	ADDI SP, SP, #16
+
+partition_return_j:
+	ORRI X0, X11, #0  // X3 = j
+	BR LR
+
+//----------------------------------------------------------------------//
+quicksort_recurse:
+	// Expecting:
+	// X0: array a base address
+	// X1: first index f
+	// X2: last index l
+	
+	SUBS X9, X1, X2  // f - l
+	B.LT quicksort_recursive_body  // if f < l, go to recurse body
+	
+	BR LR
+	
+quicksort_recursive_body:	
+	SUBI SP, SP, #40  // adjust stack for 5 items
+	STUR LR, [SP, #32]  // save return address
+	STUR X0, [SP, #24]  // *a
+	STUR X1, [SP, #16]  // f
+	STUR X2, [SP, #8]  // l
+	STUR X19, [SP, #0]  // save p
+
+	// p = partition(a, f, l);
+	LDUR X0, [SP, #24]
+	LDUR X1, [SP, #16]
+	LDUR X2, [SP, #8]
+	BL partition
+	
+	STUR X0, [SP, #0]   // result p from partition
+	
+	// quicksort_recurse(a, f, p - 1);
+	LDUR X0, [SP, #24]  // *a
+	LDUR X1, [SP, #16]  // f
+	LDUR X2, [SP, #0]
+	SUBI X2, X2, #1  // X2 = p - 1
+	BL quicksort_recurse
+	
+	// quicksort_recurse(a, p + 1, l);
+	LDUR X0, [SP, #24]  // *a
+	LDUR X1, [SP, #0]
+	ADDI X1, X1, #1  // X1 = p + 1
+	LDUR X2, [SP, #8]  // l
+	BL quicksort_recurse
+	
+	LDUR X19, [SP, #0]  // restore p
+	LDUR X2, [SP, #8]  // restore l
+	LDUR X1, [SP, #16]  // restore f
+	LDUR X0, [SP, #24]  // restore *a
+	LDUR LR, [SP, #32]  // restore return address
+	ADDI SP, SP, #40  // pop 5 items
+	BR LR
+
+//----------------------------------------------------------------------//
+quicksort:
+	// Expecting:
+	// X0: base address of array
+	// X1: size of array
+	
+	SUBI X2, X1, #1  // n - 1
+	ADD X1, XZR, XZR
+	
+	// to store and restore LR
+	SUBI SP, SP, #8
+	STUR LR, [SP, #0]
+	BL quicksort_recurse
+	LDUR LR, [SP, #0]
+	ADDI SP, SP, #8
+	
+	BR LR
