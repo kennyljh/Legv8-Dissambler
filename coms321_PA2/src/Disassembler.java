@@ -23,7 +23,8 @@ public class Disassembler {
 
     public static void main (String[] arg){
 
-        String filePath = arg[0];
+        //String filePath = arg[0];
+        String filePath = "C:\\Users\\Kenny\\coms321\\coms321_pa2\\coms321_PA2\\assignment1.legv8asm.machine";
         Disassembler disassembler = new Disassembler();
         disassembler.fileToBytes(filePath);
         disassembler.bytesToInstructions();
@@ -287,8 +288,8 @@ public class Disassembler {
         return switch (opcode) {
 
             case 0b01010100 -> "B." + condition + " " + branchLabelDeterminant(binaryToDecimal(COND_BR_address, 19));
-            case 0b10110101 -> "CBNZ " + branchLabelDeterminant(binaryToDecimal(COND_BR_address, 19));
-            case 0b10110100 -> "CBZ " + branchLabelDeterminant(binaryToDecimal(COND_BR_address, 19));
+            case 0b10110101 -> "CBNZ " + binaryToRegister(Rt) + ", " + branchLabelDeterminant(binaryToDecimal(COND_BR_address, 19));
+            case 0b10110100 -> "CBZ " + binaryToRegister(Rt) + ", " + branchLabelDeterminant(binaryToDecimal(COND_BR_address, 19));
             default -> null;
         };
     }
@@ -373,8 +374,7 @@ public class Disassembler {
         // negative
         if (((binary >> (binarySize - 1)) & 0x1) != 0){
 
-            binary = ~binary + 1;
-            return binary;
+            return binary | (-(1 << binarySize));
         }
         return binary;
     }
@@ -390,10 +390,10 @@ public class Disassembler {
 
             if (data.getBranchLabel() != null){
                 System.out.println("\n" + data.getBranchLabel() + ":");
-                System.out.println(data.getInstruction());
+                System.out.println("    " + data.getInstruction());
             }
             else {
-                System.out.println(data.getInstruction());
+                System.out.println("    " + data.getInstruction());
             }
         }
     }
