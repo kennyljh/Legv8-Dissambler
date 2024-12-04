@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.TreeMap;
 
 public class Disassembler {
@@ -22,7 +23,10 @@ public class Disassembler {
 
     public static void main (String[] arg){
 
-        String filePath = arg[0];
+//        String filePath = arg[0];
+        Scanner scan = new Scanner(System.in);
+        System.out.println("Enter filepath:");
+        String filePath = scan.nextLine();
         Disassembler disassembler = new Disassembler();
         disassembler.fileToBytes(filePath);
         disassembler.bytesToInstructions();
@@ -55,8 +59,6 @@ public class Disassembler {
 
         for (int i = 0; i < bytes.length; i += 4){
 
-            currentLine = i;
-
             int instructionBitOf32 = ((bytes[i] & 0xff) << 24) |
                                         ((bytes[i + 1] & 0xff) << 16) |
                                         ((bytes[i + 2] & 0xff) << 8) |
@@ -75,6 +77,7 @@ public class Disassembler {
                 LineCodeData newData = new LineCodeData(decodedInstruction, null);
                 lineCodeToInstructions.put(currentLine, newData);
             }
+            currentLine++;
         }
     }
 
@@ -210,7 +213,7 @@ public class Disassembler {
     private String decodeDTypeInstruction(int instructionOf32){
 
         int opcode = (instructionOf32 >> 21) & 0x7ff;
-        int DT_address = (instructionOf32 >> 12) & 0xffff;
+        int DT_address = (instructionOf32 >> 12) & 0x1ff;
         int op = (instructionOf32 >> 10) & 0x3;
         int Rn = (instructionOf32 >> 5) & 0x1f;
         int Rt = instructionOf32 & 0x1f;
@@ -239,13 +242,11 @@ public class Disassembler {
         int opcode = (instructionOf32 >> 26) & 0x3f;
         int BR_address = instructionOf32 & 0x3FFFFFF;
 
-        String branchLabel = branchLabelDeterminant(binaryToDecimal(BR_address, 26));
-
         // returning complete instruction
         return switch (opcode) {
 
-            case 0b000101 -> "B " + branchLabel;
-            case 0b100101 -> "BL " + branchLabel;
+            case 0b000101 -> "B " + branchLabelDeterminant(binaryToDecimal(BR_address, 26));
+            case 0b100101 -> "BL " + branchLabelDeterminant(binaryToDecimal(BR_address, 26));
             default -> null;
         };
     }
@@ -284,14 +285,12 @@ public class Disassembler {
 
         String condition = conditions[Rt];
 
-        String branchLabel = branchLabelDeterminant(binaryToDecimal(COND_BR_address, 19));
-
         // returning complete instruction
         return switch (opcode) {
 
-            case 0b01010100 -> "B." + condition + " " + branchLabel;
-            case 0b10110101 -> "CBNZ " + branchLabel;
-            case 0b10110100 -> "CBZ " + branchLabel;
+            case 0b01010100 -> "B." + condition + " " + branchLabelDeterminant(binaryToDecimal(COND_BR_address, 19));
+            case 0b10110101 -> "CBNZ " + branchLabelDeterminant(binaryToDecimal(COND_BR_address, 19));
+            case 0b10110100 -> "CBZ " + branchLabelDeterminant(binaryToDecimal(COND_BR_address, 19));
             default -> null;
         };
     }
@@ -315,7 +314,7 @@ public class Disassembler {
             // no pre-existing label
             if (branchLabel == null){
 
-                String newLabel = "Label" + labelCount + ":";
+                String newLabel = "Label" + labelCount;
                 labelCount++;
 
                 data.setBranchLabel(newLabel);
@@ -327,7 +326,7 @@ public class Disassembler {
         }
         else {
 
-            String newLabel = "Label" + labelCount + ":";
+            String newLabel = "Label" + labelCount;
             labelCount++;
 
             LineCodeData newData = new LineCodeData(null, newLabel);
@@ -344,26 +343,14 @@ public class Disassembler {
      */
     private String binaryToRegister (int binary){
 
-        int decimal = 0;
-        int position = 0;
-
-        while (binary > 0){
-
-            int bit = binary & 0x1;
-            decimal += bit * Math.pow(2, position);
-
-            binary = binary >> 1;
-            position++;
-        }
-
-        return switch (decimal) {
+        return switch (binary) {
             case 16 -> "IP0";
             case 17 -> "IP1";
             case 28 -> "SP";
             case 29 -> "FP";
             case 30 -> "LR";
             case 31 -> "XZR";
-            default -> "X" + decimal;
+            default -> "X" + binary;
         };
     }
 
@@ -374,18 +361,7 @@ public class Disassembler {
      */
     private String binaryToImmediate (int binary){
 
-        int decimal = 0;
-        int position = 0;
-
-        while (binary > 0){
-
-            int bit = binary & 0x1;
-            decimal += bit * Math.pow(2, position);
-
-            binary = binary >> 1;
-            position++;
-        }
-        return "#" + decimal;
+        return "#" + binary;
     }
 
     /**
@@ -396,36 +372,13 @@ public class Disassembler {
      */
     private int binaryToDecimal (int binary, int binarySize){
 
-        int decimal = 0;
-        int position = 0;
-
         // negative
         if (((binary >> (binarySize - 1)) & 0x1) != 0){
 
             binary = ~binary + 1;
-
-            while (binary > 0){
-
-                int bit = binary & 0x1;
-                decimal += bit * Math.pow(2, position);
-
-                binary = binary >> 1;
-                position++;
-            }
-            return -decimal;
+            return binary;
         }
-        else {
-
-            while (binary > 0){
-
-                int bit = binary & 0x1;
-                decimal += bit * Math.pow(2, position);
-
-                binary = binary >> 1;
-                position++;
-            }
-            return decimal;
-        }
+        return binary;
     }
 
     /**
@@ -438,8 +391,7 @@ public class Disassembler {
             LineCodeData data = lineCodeToInstructions.get(line);
 
             if (data.getBranchLabel() != null){
-                System.out.println();
-                System.out.println(data.getBranchLabel());
+                System.out.println("\n" + data.getBranchLabel() + ":");
                 System.out.println(data.getInstruction());
             }
             else {
