@@ -23,8 +23,7 @@ public class Disassembler {
 
     public static void main (String[] arg){
 
-        //String filePath = arg[0];
-        String filePath = "C:\\Users\\Kenny\\coms321\\coms321_pa2\\coms321_PA2\\assignment1.legv8asm.machine";
+        String filePath = arg[0];
         Disassembler disassembler = new Disassembler();
         disassembler.fileToBytes(filePath);
         disassembler.bytesToInstructions();
